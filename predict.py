@@ -4,8 +4,7 @@ import os
 
 import numpy as np
 import torch
-import torcxh.nn.functional as F
-import torchsummary as summary
+import torch.nn.functional as F
 from PIL import Image
 from torchvision import transforms
 
@@ -13,6 +12,10 @@ from unet import UNet
 from utils.data_vis import plot_img_and_mask
 from utils.dataset import BasicDataset
 
+#net为训练网络
+#full_img是输入图片
+#device为运行机器为显卡还是CPU
+#scale_factor为影响因子
 
 def predict_img(net,
                 full_img,
@@ -21,11 +24,16 @@ def predict_img(net,
                 out_threshold=0.5):
     net.eval()
 
+    #对图像进行预处理，将其转换成张量
     img = torch.from_numpy(BasicDataset.preprocess(full_img, scale_factor))
 
+    #unsqueeze对数据维度进行扩充
     img = img.unsqueeze(0)
+    #使用选择的设备将数据类型转换成float32
     img = img.to(device=device, dtype=torch.float32)
 
+
+    #使用pytorh时，默认要进行计算图构建，使用with时，强制之后的内容不进行计算图构建
     with torch.no_grad():
         output = net(img)
 
@@ -34,8 +42,10 @@ def predict_img(net,
         else:
             probs = torch.sigmoid(output)
 
+        #squeeze对数据维度进行缩减，删除一维空间
         probs = probs.squeeze(0)
 
+        #对PILImage进行变换
         tf = transforms.Compose(
             [
                 transforms.ToPILImage(),
@@ -103,19 +113,25 @@ if __name__ == "__main__":
     in_files = args.input
     out_files = get_output_filenames(args)
 
+    #
     net = UNet(n_channels=3, n_classes=1)
 
+    #载入模型，如果没有选择模型，使用默认模型
     logging.info("Loading model {}".format(args.model))
 
+    #是否使用cuda加速计算
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Using device {device}')
     net.to(device=device)
     net.load_state_dict(torch.load(args.model, map_location=device))
     logging.info("Model loaded !")
 
+    #将输入的文件使用enumerate函数转换成可遍历的索引队列
+    #i为序列 fn为文件名
     for i, fn in enumerate(in_files):
         logging.info("\nPredicting image {} ...".format(fn))
 
+        #读取图像文件
         img = Image.open(fn)
 
         mask = predict_img(net=net,
