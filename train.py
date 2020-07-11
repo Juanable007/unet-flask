@@ -1,9 +1,12 @@
+"""
+    该文件是采用训练集对模型进行训练
+"""
+
 import argparse
 import logging
 import os
 import sys
 
-import numpy as np
 import torch
 import torch.nn as nn
 from torch import optim
@@ -16,10 +19,15 @@ from torch.utils.tensorboard import SummaryWriter
 from utils.dataset import BasicDataset
 from torch.utils.data import DataLoader, random_split
 
+#导入训练集的路径
+#dir_img为导入训练集的图片
+#dir_mask是记录划分图片结果的记录集
 dir_img = 'data/imgs/'
 dir_mask = 'data/masks/'
 dir_checkpoint = 'checkpoints/'
 
+
+#epochs表示对数据进行多少次训练迭代
 def train_net(net,
               device,
               epochs=5,
